@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dự Đoán Sum34</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    iframe {
+      width: 100vw;
+      height: 100vh;
+      border: none;
+    }
+
+    #robot {
+      position: fixed;
+      top: 50%;
+      left: 20px;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      z-index: 9999;
+      cursor: move;
+      background: #fff;
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    #robot img {
+      width: 80px;
+      margin-right: 10px;
+    }
+
+    #robot .info {
+      font-size: 15px;
+      color: #000;
+    }
+
+    #robot .info strong {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <iframe src="https://play.sum34.club/?domain=sum34.club&packname=home"></iframe>
+
+  <div id="robot">
+    <img src="https://robotvipmrtinhios.netlify.app/robot-dudoan.png" alt="robot" />
+    <div class="info">
+      <div id="line1">🔄 Đang tải dữ liệu...</div>
+      <div id="line2"></div>
+      <div id="line3"></div>
+    </div>
+  </div>
+
+  <script>
+    // Cho phép kéo robot
+    const robot = document.getElementById("robot");
+    let isDragging = false, offsetX = 0, offsetY = 0;
+
+    robot.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      offsetX = e.clientX - robot.offsetLeft;
+      offsetY = e.clientY - robot.offsetTop;
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (isDragging) {
+        robot.style.left = (e.clientX - offsetX) + "px";
+        robot.style.top = (e.clientY - offsetY) + "px";
+      }
+    });
+
+    document.addEventListener("mouseup", () => isDragging = false);
+
+    // Mobile drag
+    robot.addEventListener("touchstart", (e) => {
+      isDragging = true;
+      const touch = e.touches[0];
+      offsetX = touch.clientX - robot.offsetLeft;
+      offsetY = touch.clientY - robot.offsetTop;
+    });
+
+    document.addEventListener("touchmove", (e) => {
+      if (isDragging) {
+        const touch = e.touches[0];
+        robot.style.left = (touch.clientX - offsetX) + "px";
+        robot.style.top = (touch.clientY - offsetY) + "px";
+      }
+    });
+
+    document.addEventListener("touchend", () => isDragging = false);
+
+    // Dự đoán logic
+    let lastSession = 0;
+
+    async function fetchData() {
+      try {
+        const res = await fetch("https://taixiu.gsum01.com/api/luckydice/GetSoiCau");
+        const data = await res.json();
+
+        if (!Array.isArray(data) || data.length < 2) return;
+
+        const current = data[0];
+        const next = data[1];
+
+        if (current.SessionId === lastSession) return;
+        lastSession = current.SessionId;
+
+        const tong = current.DiceSum;
+        const ketQua = tong >= 11 ? "Tài" : "Xỉu";
+        const duDoan = ketQua === "Tài" ? "Xỉu" : "Tài";
+
+        document.getElementById("line1").innerHTML =
+          `✅ Phiên #${current.SessionId} kết quả: <strong>${tong}</strong> điểm → <strong>${ketQua}</strong>`;
+        document.getElementById("line2").innerHTML =
+          `🔮 Dự đoán phiên tiếp theo #${next.SessionId}: <strong>${duDoan}</strong>`;
+        document.getElementById("line3").innerHTML =
+          `📌 Chiến thuật: Đảo chiều kết quả phiên trước`;
+
+      } catch (err) {
+        document.getElementById("line1").innerText = "❌ Không lấy được dữ liệu API";
+        document.getElementById("line2").innerText = "";
+        document.getElementById("line3").innerText = "";
+      }
+    }
+
+    fetchData();
+    setInterval(fetchData, 3000);
+  </script>
+</body>
+</html>
