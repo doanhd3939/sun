@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sum34 Dự Đoán</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background: #fff;
+      overflow: hidden;
+    }
+    iframe {
+      width: 100vw;
+      height: 100vh;
+      border: none;
+    }
+    #robotContainer {
+      position: fixed;
+      top: 50%;
+      left: 20px;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      z-index: 9999;
+      cursor: move;
+    }
+    #robotInner {
+      transform: rotate(90deg);
+      display: flex;
+      align-items: center;
+    }
+    #robotIcon {
+      width: 90px;
+      height: 90px;
+      margin-right: 10px;
+      pointer-events: none;
+    }
+    #robotText {
+      background: #fff;
+      color: #000;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 16px;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+      white-space: nowrap;
+      max-width: 300px;
+    }
+    strong {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <iframe src="https://play.sum34.club/?domain=sum34.club&packname=home" allow="clipboard-write; autoplay; fullscreen"></iframe>
+
+  <div id="robotContainer">
+    <div id="robotInner">
+      <img id="robotIcon" src="https://robotvipmrtinhios.netlify.app/robot-dudoan.png" alt="Robot" />
+      <div id="robotText">
+        <div id="line1">Đang tải dự đoán...</div>
+        <div id="line2"></div>
+        <div id="line3" style="font-size:12px;color:gray;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const robot = document.getElementById("robotContainer");
+    let isDragging = false, offsetX, offsetY;
+    let lastSession = 0;
+    let isWaiting = false;
+
+    // Kéo bằng chuột
+    robot.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      offsetX = e.clientX - robot.offsetLeft;
+      offsetY = e.clientY - robot.offsetTop;
+    });
+    document.addEventListener("mousemove", (e) => {
+      if (isDragging) {
+        robot.style.left = (e.clientX - offsetX) + "px";
+        robot.style.top = (e.clientY - offsetY) + "px";
+      }
+    });
+    document.addEventListener("mouseup", () => isDragging = false);
+
+    // Kéo bằng cảm ứng
+    robot.addEventListener("touchstart", (e) => {
+      isDragging = true;
+      const touch = e.touches[0];
+      offsetX = touch.clientX - robot.offsetLeft;
+      offsetY = touch.clientY - robot.offsetTop;
+    });
+    document.addEventListener("touchmove", (e) => {
+      if (isDragging) {
+        const touch = e.touches[0];
+        robot.style.left = (touch.clientX - offsetX) + "px";
+        robot.style.top = (touch.clientY - offsetY) + "px";
+      }
+    });
+    document.addEventListener("touchend", () => isDragging = false);
+
+    function predictByStrategy(diceSum) {
+      if (diceSum >= 11) return { bet: "Tài", reason: "Tổng >= 11 → nghiêng về Tài" };
+      if (diceSum <= 9)  return { bet: "Xỉu", reason: "Tổng <= 9 → nghiêng về Xỉu" };
+      return {
+        bet: Math.random() > 0.5 ? "Tài" : "Xỉu",
+        reason: "Tổng gần trung bình → chọn ngẫu nhiên"
+      };
+    }
+
+    async function fetchAndUpdate() {
+      if (isWaiting) return;
+
+      try {
+        const res = await fetch("https://taixiu.gsum01.com/api/luckydice/GetSoiCau");
+        const data = await res.json();
+
+        const current = data[0];
+        if (!current) return;
+
+        if (current.SessionId !== lastSession) {
+          lastSession = current.SessionId;
+          isWaiting = true;
+
+          // Delay 5 giây để phân tích
+          setTimeout(() => {
+            const nextSession = current.SessionId + 1;
+            const { bet, reason } = predictByStrategy(current.DiceSum);
+
+            document.getElementById("line1").innerHTML = `🔮 Dự đoán phiên <strong>#${nextSession}</strong>: <strong>${bet}</strong>`;
+            document.getElementById("line2").innerHTML = `🎲 Tổng phiên trước: ${current.DiceSum}`;
+            document.getElementById("line3").innerHTML = `📌 Chiến thuật: ${reason}`;
+
+            isWaiting = false;
+          }, 5000);
+        }
+      } catch (e) {
+        document.getElementById("line1").innerText = "❌ Lỗi API";
+        document.getElementById("line2").innerText = "";
+        document.getElementById("line3").innerText = "";
+      }
+    }
+
+    setInterval(fetchAndUpdate, 1000);
+  </script>
+</body>
+</html>
