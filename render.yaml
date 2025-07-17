@@ -1,11 +1,10 @@
 services:
   - type: web
-    name: bot-bypass
+    name: sun-bypass
     env: python
-    plan: free
-    runtime: python3.10          # Fix lỗi với python-telegram-bot
     buildCommand: pip install -r requirements.txt
     startCommand: python moinhat3.py
+    plan: free
     envVars:
       - key: BOT_TOKEN
-        value: 8001493342:AAFRuoL0XmPuPMj4d8448YOUOATCW2OQvMI
+        sync: false
